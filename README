@@ -1,0 +1,54 @@
+Nota
+----
+ESTE PROGRAMA É DISTRIBUÍDO NA ESPERANÇA DE QUE POSSA VIR A SER ÚTIL, MAS SEM NENHUMA GARANTIA!
+
+Você é livre para modificar, melhorar ou otimizar este programa, mas peço gentilmente que mantenha os créditos originais. ;)
+
+Sobre
+-----
+O "rtt-graph.sh" é um shell script que utilizando o RRDTool e o comando ping gera gráficos estatísticos diários, semanais e mensais relativos a latência de rede, tudo muito simples e bem funcional. 
+
+Desenvolvimento
+---------------
+Este projeto foi desenvolvido e testado no seguinte ambiente:
+
+- Linux 3.16.0-4-amd64 #1 SMP Debian 3.16.39-1+deb8u1 (2017-02-22)
+- RRDtool 1.4.8
+- GNU bash, version 4.3.30(1)-release (x86_64-pc-linux-gnu)
+- GNU Awk 4.1.1
+- grep (GNU grep) 2.20
+- ping (iputils-s20121221)
+- Browsers: Mozilla Firefox 51.0.1, Google Chrome 56.0.2924.87, Vivaldi 1.7.735.46
+			
+Instalação
+----------
+1) Edite o "rtt-graph.sh" e altere as VARIÁVEIS GLOBAIS conforme necessário
+
+2) Dê permissão de execução ao script:
+
+chmod 755 rtt-graph.sh
+
+3) Execute o script para gerar as bases de dados:
+
+./rtt-graph.sh
+
+4) Execute novamente o script, mas agora para gerar as páginas html:
+
+./rtt-graph.sh --html
+
+5) Agende no cron do usuário root a execução do mesmo de 5 em 5 min.:
+
+*/5 * * * * /caminho/para/rtt-graph.sh > /dev/null 2>&1
+
+6) Finalmente acesse as páginas html geradas através dum navegador web:
+
+Projetos
+--------
+Para saber mais sobre os meus projetos, acesse meu repositório no Github: https://github.com/SandroMarcell
+
+Dúvidas
+-------
+Para dúvidas ou outras informações:
+
+Email: smarcell@mail.com
+Blog: https://sanmarcell.wordpress.com
