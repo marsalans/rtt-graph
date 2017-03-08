@@ -33,7 +33,6 @@ PERIODOS='day week month'
 INTERVALO=$((60 * 5))
 
 # Vetor com as definicoes dos equipamentos e seus respectivos ip's
-#
 # !! ATENCAO: ao adicionar novas entradas, sempre MANTENHA a correta ordem 
 # e sequencia dos indices deste vetor. !!
 declare -a HOSTS
