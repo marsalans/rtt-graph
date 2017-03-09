@@ -67,7 +67,7 @@ function gerarGraficos {
 		ip="${args[1]}" # IP do equipamento
 		args=("${args[@]:2}") # Descartando os dois elementos ja lidos anteriormente do vetor
 
-		retorno_ping=$(ping -Q 16 -n -U -i 0.2 -c 10 -W 1 -q $ip)
+		retorno_ping=$(ping -n -U -i 0.2 -c 10 -W 1 -q $ip)
 		pp=$(echo $retorno_ping | grep -oP '\d+(?=% packet loss)') # Pacotes perdidos
 
 		# Pingou ou nao pingou?! ^_^
