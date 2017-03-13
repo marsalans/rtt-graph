@@ -263,7 +263,7 @@ function criarPaginasHTML {
 			<div id="content">
 				<script type="text/javascript">
 					$(for i in $PERIODOS; do
-						echo "document.write('<div><img src="\"${ip}-${i}.png?nocache=\' + Math.random\(\) + \'\"" alt="\"${0##*/} --html\"" /></div>');"
+						echo "document.write('<div><img src="\"${ip}-${i}.png?nocache=\' + \(Math.floor\(Math.random\(\) \* 1e20\)\).toString\(36\) + \'\"" alt="\"${0##*/} --html\"" /></div>');"
 					done)
 				</script>
 			</div>
