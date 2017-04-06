@@ -36,10 +36,13 @@ INTERVALO=$((60 * 5))
 # !! ATENCAO: ao adicionar novas entradas, sempre MANTENHA a correta ordem 
 # e sequencia dos indices deste vetor. !!
 declare -a HOSTS
+# Modem
 HOSTS[0]='Modem ADSL - Zyxel'
 HOSTS[1]='192.168.0.1'
+# Roteador 1
 HOSTS[2]='Roteador Wireless - TPLINK'
 HOSTS[3]='192.168.1.1'
+# Roteador 2
 HOSTS[4]='Roteador Wireless - Intelbras'
 HOSTS[5]='192.168.2.1'
 
