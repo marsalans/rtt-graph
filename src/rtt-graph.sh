@@ -69,10 +69,10 @@ gerarGraficos() {
 		args=("${args[@]:2}") # Descartando os dois elementos ja lidos anteriormente do vetor
 
 		retorno_ping=$(ping -n -U -i 0.2 -c 10 -W 1 -q $ip)
-		pp=$(echo $retorno_ping | grep -oP '\d+(?=% packet loss)') # Pacotes perdidos
-
 		# Pingou ou nao pingou?! :)
 		[ $? -ne 0 ] && latencia=(0 0 0) || latencia=($(echo $retorno_ping | awk -F '/' 'END { print $4,$5,$6 }' | grep -oP '\d.+'))
+		# Pacotes perdidos
+		pp=$(echo $retorno_ping | grep -oP '\d+(?=% packet loss)')
 
 		# Latencias minimas, medias e maximas
 		rtt_min="${latencia[0]}"
