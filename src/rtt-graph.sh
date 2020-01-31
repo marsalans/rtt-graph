@@ -89,10 +89,10 @@ gerarGraficos() {
 
 			echo "Criando base de dados rrd: ${BASES_RRD}/${ip}.rrd"
 			rrdtool create ${BASES_RRD}/${ip}.rrd --start $(date '+%s') --step $INTERVALO \
-				DS:min:GAUGE:$((INTERVALO * 2)):0:U \
-				DS:med:GAUGE:$((INTERVALO * 2)):0:U \
-				DS:max:GAUGE:$((INTERVALO * 2)):0:U \
-				DS:pp:GAUGE:$((INTERVALO * 2)):0:U \
+				DS:min:DCOUNTER:$((INTERVALO * 2)):0:U \
+				DS:med:DCOUNTER:$((INTERVALO * 2)):0:U \
+				DS:max:DCOUNTER:$((INTERVALO * 2)):0:U \
+				DS:pp:DCOUNTER:$((INTERVALO * 2)):0:U \
 				RRA:MIN:0.5:3:288 \
 				RRA:MIN:0.5:4:$v1hr \
 				RRA:MIN:0.5:24:$v6hrs \
