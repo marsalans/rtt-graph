@@ -123,7 +123,7 @@ gerarGraficos() {
 			esac
 
 			rrdtool graph ${DIR_WWW}/${ip}-${i}.png --start end-$p --end now --lazy --font 'TITLE:0:Bold' --title "$tipo" \
-				--watermark "$(date '+%^c')" --vertical-label 'Latência (ms)' --height 124 --width 550 \
+				--watermark $(date '+%^c') --vertical-label 'Latência (ms)' --height 124 --width 550 \
 				--lower-limit 0 --units-exponent 0 --slope-mode --imgformat PNG --alt-y-grid --rigid \
 				--color 'BACK#F8F8FF' --color 'SHADEA#FFFFFF' --color 'SHADEB#FFFFFF' \
 				--color 'MGRID#AAAAAA' --color 'GRID#CCCCCC' --color 'ARROW#333333' \
