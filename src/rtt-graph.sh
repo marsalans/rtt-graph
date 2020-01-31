@@ -95,15 +95,15 @@ gerarGraficos() {
 				DS:pp:GAUGE:$((INTERVALO * 2)):0:U \
 				RRA:MIN:0.5:3:288 \
 				RRA:MIN:0.5:4:$v1hr \
-				RRA:MIN:0.5:8:$v6hrs \
+				RRA:MIN:0.5:24:$v6hrs \
 				RRA:MIN:0.5:288:$v24hrs \
 				RRA:AVERAGE:0.5:3:288 \
 				RRA:AVERAGE:0.5:4:$v1hr \
-				RRA:AVERAGE:0.5:8:$v6hrs \
+				RRA:AVERAGE:0.5:24:$v6hrs \
 				RRA:AVERAGE:0.5:288:$v24hrs \
 				RRA:MAX:0.5:3:288 \
 				RRA:MAX:0.5:4:$v1hr \
-				RRA:MAX:0.5:8:$v6hrs \
+				RRA:MAX:0.5:24:$v6hrs \
 				RRA:MAX:0.5:288:$v24hrs
 			[ $? -gt 0 ] && return 1
 		fi
