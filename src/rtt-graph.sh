@@ -20,26 +20,29 @@
 PATH='/bin:/sbin:/usr/bin:/usr/sbin'
 
 # Diretorio onde serao armazenadas as bases de dados do rrdtool
-BASES_RRD='/var/lib/rrd/rtt-graph'
+BASES_RRD='/var/cache/rrdtool/rtt-graph'
 
 # Diretorio no servidor web onde serao armazenados os arquivos html/png gerados
-DIR_WWW='/var/www/htdocs/rtt-graph'
+DIR_WWW='/var/www/html/rtt-graph'
 
 # Gerar os graficos para os seguintes periodos de tempo
-PERIODOS='day week month'
+PERIODOS='day week month year'
 
-# Intervalo de atualizacao das paginas html (padrao 5 minutos)
-INTERVALO=$((60 * 5))
+# Intervalo de atualizacao das bases RRD (padrao 15 minutos)
+INTERVALO=$((60 * 15))
 
-# Vetor com as definicoes dos equipamentos e seus respectivos ip's
-# !! ATENCAO: ao adicionar novas entradas, sempre MANTENHA a correta ordem 
-# e sequencia dos indices deste vetor. !!
+#########################################################################
+# Vetor com as definicoes dos equipamentos e seus respectivos ip's      #
+#                                                                       #
+# ATENCAO: ao adicionar novas entradas, SEMPRE MANTENHA a correta ordem #
+# e sequencia dos indices deste vetor!                                  #
+#########################################################################
 declare -a HOSTS
 # Modem
 HOSTS[0]='Modem ADSL - Zyxel'
 HOSTS[1]='192.168.0.1'
 # Roteador 1
-HOSTS[2]='Roteador Wireless - TPLINK'
+HOSTS[2]='Roteador Wireless - TP-LINK'
 HOSTS[3]='192.168.1.1'
 # Roteador 2
 HOSTS[4]='Roteador Wireless - Intelbras'
@@ -49,7 +52,7 @@ HOSTS[5]='192.168.2.1'
 [ ! -d "$BASES_RRD" ] && { mkdir -p "$BASES_RRD" || exit 1; }
 [ ! -d "$DIR_WWW" ] && { mkdir -p "$DIR_WWW" || exit 1; }
 
-function gerarGraficos {
+gerarGraficos() {
 	declare -a args=("${HOSTS[@]}")
 	declare -a latencia
 	declare host=''
@@ -68,12 +71,8 @@ function gerarGraficos {
 		retorno_ping=$(ping -n -U -i 0.2 -c 10 -W 1 -q $ip)
 		pp=$(echo $retorno_ping | grep -oP '\d+(?=% packet loss)') # Pacotes perdidos
 
-		# Pingou ou nao pingou?! ^_^
-		if [ $? -ne 0 ]; then
-			latencia=(0 0 0)
-		else
-			latencia=($(echo $retorno_ping | awk -F '/' 'END { print $4,$5,$6 }' | grep -oP '\d.+'))
-		fi
+		# Pingou ou nao pingou?! :)
+		[ $? -ne 0 ] && latencia=(0 0 0) || latencia=($(echo $retorno_ping | awk -F '/' 'END { print $4,$5,$6 }' | grep -oP '\d.+'))
 
 		# Latencias minimas, medias e maximas
 		rtt_min="${latencia[0]}"
@@ -83,30 +82,29 @@ function gerarGraficos {
 		# Caso as bases rrd nao existam, entao serao criadas e cada uma
 		# tera o mesmo nome do ip verificado
 		if [ ! -e "${BASES_RRD}/${ip}.rrd" ]; then
-			# Armazenar valores de acordo com os peridos definidos em $PERIODO
-			# e computados com base no intervalo de $INTERVALO
-			v30min=$((INTERVALO * 2 / 30))  # Semanal
-			v2hrs=$((INTERVALO * 2 / 120))  # Mensal
-			v1d=$((1440 / (INTERVALO * 2))) # Anual
-			
+			# Resolucao = QUANTIDADE DE SEGUNDOS / (INTERVALO * FATOR DE MULTIPLICACAO)
+			v1hr=$((604800 / (INTERVALO * 4))) # Valor de 1 semana (1 hora de resolucao)
+			v6hrs=$((2629800 / (INTERVALO * 24))) # Valor de 1 mes (6 horas de resolucao)
+			v24hrs=$((31557600 / (INTERVALO * 288))) # Valor de 1 ano (24 horas de resolucao)
+
 			echo "Criando base de dados rrd: ${BASES_RRD}/${ip}.rrd"
-			rrdtool create ${BASES_RRD}/${ip}.rrd --start 0 --step $INTERVALO \
+			rrdtool create ${BASES_RRD}/${ip}.rrd --start $(date '+%s') --step $INTERVALO \
 				DS:min:GAUGE:$((INTERVALO * 2)):0:U \
 				DS:med:GAUGE:$((INTERVALO * 2)):0:U \
 				DS:max:GAUGE:$((INTERVALO * 2)):0:U \
 				DS:pp:GAUGE:$((INTERVALO * 2)):0:U \
-				RRA:MIN:0.5:1:1500 \
-				RRA:MIN:0.5:$v30min:1500 \
-				RRA:MIN:0.5:$v2hrs:1500 \
-				RRA:MIN:0.5:$v1d:1500 \
-				RRA:AVERAGE:0.5:1:1500 \
-				RRA:AVERAGE:0.5:$v30min:1500 \
-				RRA:AVERAGE:0.5:$v2hrs:1500 \
-				RRA:AVERAGE:0.5:$v1d:1500 \
-				RRA:MAX:0.5:1:1500 \
-				RRA:MAX:0.5:$v30min:1500 \
-				RRA:MAX:0.5:$v2hrs:1500 \
-				RRA:MAX:0.5:$v1d:1500
+				RRA:MIN:0.5:3:288 \
+				RRA:MIN:0.5:4:$v1hr \
+				RRA:MIN:0.5:8:$v6hrs \
+				RRA:MIN:0.5:288:$v24hrs \
+				RRA:AVERAGE:0.5:3:288 \
+				RRA:AVERAGE:0.5:4:$v1hr \
+				RRA:AVERAGE:0.5:8:$v6hrs \
+				RRA:AVERAGE:0.5:288:$v24hrs \
+				RRA:MAX:0.5:3:288 \
+				RRA:MAX:0.5:4:$v1hr \
+				RRA:MAX:0.5:8:$v6hrs \
+				RRA:MAX:0.5:288:$v24hrs
 			[ $? -gt 0 ] && return 1
 		fi
 
@@ -118,17 +116,18 @@ function gerarGraficos {
 		# e depois gere os graficos de acordo com os periodos
 		for i in $PERIODOS; do
 			case $i in
-				  'day') tipo='Média diária (5 minutos)' ;;
-				 'week') tipo='Média semanal (30 minutos)' ;;
-				'month') tipo='Média mensal (2 horas)' ;;
+				  'day') tipo='Gráfico diário (amostragem de 15 min)'; p='1day' ;;
+				 'week') tipo='Gráfico semanal (amostragem de 1h)'; p='7days' ;;
+				'month') tipo='Gráfico mensal (amostragem de 6h)'; p='1month' ;;
+				 'year') tipo='Gráfico anual (amostragem de 24h)'; p='1year' ;;
 			esac
 
-			rrdtool graph ${DIR_WWW}/${ip}-${i}.png --start -1$i --lazy --font='TITLE:0:Bold' --title="$tipo" \
-				--watermark="$(date "+%c")" --vertical-label='Latência (ms)' --height=124 --width=550 \
-				--lower-limit=0 --units-exponent=0 --slope-mode --imgformat=PNG --alt-y-grid --rigid \
-				--color='BACK#F8F8FF' --color='SHADEA#FFFFFF' --color='SHADEB#FFFFFF' \
-				--color='MGRID#AAAAAA' --color='GRID#CCCCCC' --color='ARROW#333333' \
-				--color='FONT#333333' --color='AXIS#333333' --color='FRAME#333333' \
+			rrdtool graph ${DIR_WWW}/${ip}-${i}.png --start end-$p --end now --lazy --font 'TITLE:0:Bold' --title "$tipo" \
+				--watermark "$(date '+%^c')" --vertical-label 'Latência (ms)' --height 124 --width 550 \
+				--lower-limit 0 --units-exponent 0 --slope-mode --imgformat PNG --alt-y-grid --rigid \
+				--color 'BACK#F8F8FF' --color 'SHADEA#FFFFFF' --color 'SHADEB#FFFFFF' \
+				--color 'MGRID#AAAAAA' --color 'GRID#CCCCCC' --color 'ARROW#333333' \
+				--color 'FONT#333333' --color 'AXIS#333333' --color 'FRAME#333333' \
 				DEF:rtt_min=${BASES_RRD}/${ip}.rrd:min:MIN \
 				DEF:rtt_med=${BASES_RRD}/${ip}.rrd:med:AVERAGE \
 				DEF:rtt_max=${BASES_RRD}/${ip}.rrd:max:MAX \
@@ -155,20 +154,20 @@ function gerarGraficos {
 	return 0
 }
 
-function criarPaginasHTML {
+criarPaginasHTML() {
 	declare -a args=("${HOSTS[@]}")
 	declare -a ips
 	declare host=''
 	declare ip=''
 	declare titulo='GR&Aacute;FICOS ESTAT&Iacute;STICOS DE LAT&Ecirc;NCIA DE REDE'
-	
+
 	# Filtrando o vetor $HOSTS para retornar somente os ips
 	for ((i = 0; i <= ${#HOSTS[@]}; i++)); do
 		((i % 2 == 1)) && ips+=("${HOSTS[$i]}")
 	done
-	
+
 	echo 'Criando paginas HTML...'
-	
+
 	# 1o: Criar a pagina index
 	cat <<- FIM > ${DIR_WWW}/index.html
 		<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
@@ -191,7 +190,7 @@ function criarPaginasHTML {
 			nav { text-align: center; width: 24%; margin-right: 1%; border: 1px solid #CCC; margin:5px; margin-top: 10px; }
 			nav a { display: block; width: 100%; background-color: #C33; color: #FFF; height: 30px; margin-bottom: 10px; padding: 10px; border-radius: 3px; line-height: 10px; vertical-align: middle; }
 			nav a:hover, nav a:active { background-color: #226; }
-			article { width: 75%; height: 1000px; }
+			article { width: 75%; height: 1200px; }
 			h1 { padding: 0; margin: 0 0 20px 0; text-align: center; }
 			p { text-align: center; margin-top: 30px; }
 			article section { padding: 0; width: 100%; height: 100%; }
@@ -217,7 +216,7 @@ function criarPaginasHTML {
 			</nav>
 			<article>
 				<h1>GR&Aacute;FICOS ESTAT&Iacute;STICOS DE LAT&Ecirc;NCIA DE REDE</h1>
-				<div id="objetos" class="conteudo"><p>* Clique para visualizar os gr&aacute;ficos.</p></div>
+				<div id="objetos" class="conteudo"><p>&#10229; Clique no menu para visualizar os gr&aacute;ficos.</p></div>
 				<section>
 					$(for i in "${ips[@]}"; do
 						echo "<div id="\"$i\"" class="\"oculto\""><object type="\"text/html\"" data="\"${i}.html\"" class="\"conteudo\""></object></div>"
@@ -225,11 +224,11 @@ function criarPaginasHTML {
 				</section>
 			</article>
 			<footer>
-				<small>${0##*/} &copy; 2017 Sandro Marcell</small>
+				<small>${0##*/} &copy; 2017-$(date '+%Y') <a href="https://github.com/sandromarcell">Sandro Marcell</a></small>
 			</footer>
 		</div>
-	</body>   
-	</html>	
+	</body>
+	</html>
 	FIM
 
 	# 2o: Criar pagina especifica para cada host com os periodos definidos
@@ -245,7 +244,6 @@ function criarPaginasHTML {
 		<head>
 		<title>${0##*/}</title>
 		<meta http-equiv="content-type" content="text/html;charset=utf-8" />
-		<meta http-equiv="refresh" content="$INTERVALO" />
 		<meta name="author" content="Sandro Marcell" />
 		<style type="text/css">
 		body { margin: 0; padding: 0; background-color: #FFFFFF; width: 100%; height: 100%; font: 20px/1.5em Helvetica, Arial, sans-serif; }
@@ -253,6 +251,11 @@ function criarPaginasHTML {
 		#content { position: relative; text-align: center; margin: auto; }
 		#footer { font-size: 13px; text-align: center; }
 		</style>
+		<script type="text/javascript">
+			var refresh = setTimeout(function() {
+				window.location.reload(true);
+			}, $((INTERVALO * 1000)));
+		</script>
 		</head>
 		<body>
 			<div id="header">
