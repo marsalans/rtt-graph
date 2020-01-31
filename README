@@ -36,11 +36,11 @@ chmod 755 rtt-graph.sh
 
 ./rtt-graph.sh --html
 
-5) Agende no cron do usuário root a execução do mesmo de 5 em 5 min.:
+5) Agende no cron do usuário root a execução do mesmo de 15 em 15 min.:
 
-*/5 * * * * /caminho/para/rtt-graph.sh > /dev/null 2>&1
+*/15 * * * * /caminho/para/rtt-graph.sh > /dev/null 2>&1
 
-6) Finalmente acesse as páginas html geradas através dum navegador web:
+6) Finalmente acesse as páginas html geradas através dum navegador web
 
 Projetos
 --------
