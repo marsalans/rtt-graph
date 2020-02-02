@@ -20,10 +20,10 @@
 PATH='/bin:/sbin:/usr/bin:/usr/sbin'
 
 # Diretorio onde serao armazenadas as bases de dados do rrdtool
-BASES_RRD='/var/cache/rrdtool/rtt-graph'
+BASES_RRD='/var/db/rrdtool/rtt-graph'
 
 # Diretorio no servidor web onde serao armazenados os arquivos html/png gerados
-DIR_WWW='/var/www/html/rtt-graph'
+DIR_WWW='/var/www/lighttpd/rtt-graph'
 
 # Gerar os graficos para os seguintes periodos de tempo
 PERIODOS='day week month year'
@@ -39,14 +39,14 @@ INTERVALO=$((60 * 15))
 #########################################################################
 declare -a HOSTS
 # Modem
-HOSTS[0]='Modem ADSL - Zyxel'
-HOSTS[1]='192.168.0.1'
+HOSTS[0]='CPE Allfiber'
+HOSTS[1]='192.168.1.1'
 # Roteador 1
-HOSTS[2]='Roteador Wireless - TP-LINK'
-HOSTS[3]='192.168.1.1'
+HOSTS[2]='Roteador OpenWrt'
+HOSTS[3]='10.11.12.1'
 # Roteador 2
-HOSTS[4]='Roteador Wireless - Intelbras'
-HOSTS[5]='192.168.2.1'
+HOSTS[4]='Roteador OpenWrt-Rpt'
+HOSTS[5]='10.11.12.2'
 
 # Criando os diretorios de trabalho caso nao existam
 [ ! -d "$BASES_RRD" ] && { mkdir -p "$BASES_RRD" || exit 1; }
@@ -68,7 +68,7 @@ gerarGraficos() {
 		ip="${args[1]}" # IP do equipamento
 		args=("${args[@]:2}") # Descartando os dois elementos ja lidos anteriormente do vetor
 
-		retorno_ping=$(ping -n -U -i 0.2 -c 10 -W 1 -q $ip)
+		retorno_ping=$(ping -qnU -i 0.2 -c 10 -W 1 $ip)
 		# Pingou ou nao pingou?! :)
 		[ $? -ne 0 ] && latencia=(0 0 0) || latencia=($(echo $retorno_ping | awk -F '/' 'END { print $4,$5,$6 }' | grep -oP '\d.+'))
 		# Pacotes perdidos
@@ -82,7 +82,7 @@ gerarGraficos() {
 		# Caso as bases rrd nao existam, entao serao criadas e cada uma
 		# tera o mesmo nome do ip verificado
 		if [ ! -e "${BASES_RRD}/${ip}.rrd" ]; then
-			# Resolucao = QUANTIDADE DE SEGUNDOS / (INTERVALO * FATOR DE MULTIPLICACAO)
+			# Resolucao = Quantidade de segundos do periodo / (Intervalo de resolucao * Fator de multiplicacao de resolucao)
 			v1hr=$((604800 / (INTERVALO * 4))) # Valor de 1 semana (1 hora de resolucao)
 			v6hrs=$((2629800 / (INTERVALO * 24))) # Valor de 1 mes (6 horas de resolucao)
 			v24hrs=$((31557600 / (INTERVALO * 288))) # Valor de 1 ano (24 horas de resolucao)
@@ -131,11 +131,11 @@ gerarGraficos() {
 				DEF:rtt_min=${BASES_RRD}/${ip}.rrd:min:MIN \
 				DEF:rtt_med=${BASES_RRD}/${ip}.rrd:med:AVERAGE \
 				DEF:rtt_max=${BASES_RRD}/${ip}.rrd:max:MAX \
-				DEF:rtt_pp=${BASES_RRD}/${ip}.rrd:pp:AVERAGE \
+				DEF:rtt_pp=${BASES_RRD}/${ip}.rrd:pp:MAX \
 				VDEF:vmin=rtt_min,MINIMUM \
 				VDEF:vmed=rtt_med,AVERAGE \
 				VDEF:vmax=rtt_max,MAXIMUM \
-				VDEF:vpp=rtt_pp,AVERAGE \
+				VDEF:vpp=rtt_pp,MAXIMUM \
 				"COMMENT:$(printf '%5s')" \
 				"LINE1:rtt_min#009900:Miníma\:$(printf '%11s')" \
 				GPRINT:vmin:"%1.3lfms\l" \
@@ -146,7 +146,7 @@ gerarGraficos() {
 				"LINE1:rtt_med#0066CC:Média\:$(printf '%12s')" \
 				GPRINT:vmed:"%1.3lfms\l" \
 				"COMMENT:$(printf '%5s')" \
-				"HRULE:vpp#000000:Pacotes perdidos\:$(printf '%1s')" \
+				"COMMENT:Pacotes perdidos\:$(printf '%3s')" \
 				GPRINT:vpp:"%1.0lf%%\l" 1> /dev/null
 			[ $? -gt 0 ] && return 1
 		done
@@ -193,10 +193,10 @@ criarPaginasHTML() {
 			article { width: 75%; height: 1200px; }
 			h1 { padding: 0; margin: 0 0 20px 0; text-align: center; }
 			p { text-align: center; margin-top: 30px; }
-			article section { padding: 0; width: 100%; height: 100%; }
+			article section { padding: 0; width: 100%; }
 			.container{ width: 1200px; float: left; position: relative; left: 50%; margin-left: -600px; background:#FFF; padding: 10px; }
-			.conteudo { width: 100%; height: 100%; overflow: hidden;}
-			.oculto { display: none; }
+			.content { width: 100%; height: 100%; overflow: hidden;}
+			.hide { display: none; }
 		</style>
 		<script type="text/javascript">
 			function exibirGraficos(id) {
@@ -216,10 +216,10 @@ criarPaginasHTML() {
 			</nav>
 			<article>
 				<h1>GR&Aacute;FICOS ESTAT&Iacute;STICOS DE LAT&Ecirc;NCIA DE REDE</h1>
-				<div id="objetos" class="conteudo"><p>&#10229; Clique no menu para visualizar os gr&aacute;ficos.</p></div>
+				<div id="objetos" class="content"><p>&#10229; Clique no menu para visualizar os gr&aacute;ficos.</p></div>
 				<section>
 					$(for i in "${ips[@]}"; do
-						echo "<div id="\"$i\"" class="\"oculto\""><object type="\"text/html\"" data="\"${i}.html\"" class="\"conteudo\""></object></div>"
+						echo "<div id="\"$i\"" class="\"hide\""><object type="\"text/html\"" data="\"${i}.html\"" class="\"content\""></object></div>"
 					done)
 				</section>
 			</article>
