@@ -29,6 +29,7 @@ DIR_WWW='/var/www/lighttpd/rtt-graph'
 PERIODOS='day week month year'
 
 # Intervalo de atualizacao das bases RRD (padrao 15 minutos)
+# Obs.: altere esse valor somente se souber realmente o que esta fazendo!
 INTERVALO=$((60 * 15))
 
 #########################################################################
@@ -124,7 +125,7 @@ gerarGraficos() {
 
 			rrdtool graph ${DIR_WWW}/${ip}-${i}.png --end now --start end-$p --lazy --font 'TITLE:0:Bold' --title "$tipo" \
 				--watermark "$(date '+%^c')" --vertical-label 'Latência (ms)' --height 124 --width 550 \
-				--lower-limit 0 --units-exponent 0 --slope-mode --imgformat PNG --rigid \
+				--lower-limit 0 --units-exponent 0 --slope-mode --imgformat PNG --rigid --alt-y-grid --interlaced \
 				--color 'BACK#F8F8FF' --color 'SHADEA#FFFFFF' --color 'SHADEB#FFFFFF' \
 				--color 'MGRID#AAAAAA' --color 'GRID#CCCCCC' --color 'ARROW#333333' \
 				--color 'FONT#333333' --color 'AXIS#333333' --color 'FRAME#333333' \
